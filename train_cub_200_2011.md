@@ -444,6 +444,7 @@ show_transform(
 
 
 # 5. Start to train
+With all things prepared, you just need to run `train()` method.
 
 
 ```python
