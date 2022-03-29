@@ -15,7 +15,7 @@ Download operator files together with the jupyter notebook.
     remote: Counting objects: 100% (220/220), done.[K
     remote: Compressing objects: 100% (212/212), done.[K
     remote: Total 220 (delta 119), reused 0 (delta 0), pack-reused 0[K
-    Receiving objects: 100% (220/220), 908.00 KiB | 358.00 KiB/s, done.
+    Receiving objects: 100% (220/220), 908.00 KiB | 12.00 KiB/s, done.
     Resolving deltas: 100% (119/119), done.
     /media/supermicro/DATA1/zhangchen_workspace/towhee_examples/resnet-image-embedding
     [0m[01;34mexamples[0m/                     requirements.txt
@@ -82,9 +82,9 @@ Now start training the operator with Bird-400 dataset.
 op.train(training_config, train_dataset=train_data, eval_dataset=eval_data)
 ```
 
-    2022-03-23 14:22:28,045 - 139813583537984 - trainer.py-trainer:319 - WARNING: TrainingConfig(output_dir='bird_output', overwrite_output_dir=True, eval_strategy='epoch', eval_steps=None, batch_size=32, val_batch_size=-1, seed=42, epoch_num=2, dataloader_pin_memory=True, dataloader_drop_last=True, dataloader_num_workers=0, lr=5e-05, metric='Accuracy', print_steps=None, load_best_model_at_end=False, early_stopping={'monitor': 'eval_epoch_metric', 'patience': 4, 'mode': 'max'}, model_checkpoint={'every_n_epoch': 1}, tensorboard={'log_dir': None, 'comment': ''}, loss='CrossEntropyLoss', optimizer='Adam', lr_scheduler_type='linear', warmup_ratio=0.0, warmup_steps=0, device_str=None, sync_bn=False, freeze_bn=False)
-    [epoch 1/2] loss=2.161, metric=0.675, eval_loss=2.138, eval_metric=0.942: 100%|█████████████████████████████████████████████████| 1824/1824 [03:48<00:00,  7.98step/s]
-    [epoch 2/2] loss=0.368, metric=0.939, eval_loss=0.389, eval_metric=0.968: 100%|█████████████████████████████████████████████████| 1824/1824 [03:45<00:00,  7.13step/s]
+    2022-03-29 15:10:39,214 - 139982696838976 - trainer.py-trainer:319 - WARNING: TrainingConfig(output_dir='bird_output', overwrite_output_dir=True, eval_strategy='epoch', eval_steps=None, batch_size=32, val_batch_size=-1, seed=42, epoch_num=2, dataloader_pin_memory=True, dataloader_drop_last=True, dataloader_num_workers=0, lr=5e-05, metric='Accuracy', print_steps=None, load_best_model_at_end=False, early_stopping={'monitor': 'eval_epoch_metric', 'patience': 4, 'mode': 'max'}, model_checkpoint={'every_n_epoch': 1}, tensorboard={'log_dir': None, 'comment': ''}, loss='CrossEntropyLoss', optimizer='Adam', lr_scheduler_type='linear', warmup_ratio=0.0, warmup_steps=0, device_str=None, sync_bn=False, freeze_bn=False)
+    [epoch 1/2] loss=2.181, metric=0.672, eval_loss=2.157, eval_metric=0.947: 100%|█████████████████████████████████████████████████| 1824/1824 [03:53<00:00,  7.82step/s]
+    [epoch 2/2] loss=0.37, metric=0.939, eval_loss=0.391, eval_metric=0.962: 100%|██████████████████████████████████████████████████| 1824/1824 [03:47<00:00,  8.39step/s]
 
 # 6. Predict
 With the fine-tuned model, you can then use the operator to classify a bird picture.
@@ -109,7 +109,7 @@ print('It is {}.'.format(eval_data.classes[pred_label_idx].lower()))
 print('probability = {}'.format(prediction_score))
 ```
 
-    2022-03-23 14:32:26,135 - 139813583537984 - image.py-image:725 - WARNING: Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers).
+    2022-03-29 15:18:20,841 - 139982696838976 - image.py-image:725 - WARNING: Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers).
 
 
 
@@ -118,6 +118,54 @@ print('probability = {}'.format(prediction_score))
     
 
 
-    It is purple gallinule.
-    probability = 0.833383321762085
+    It is mandrin duck.
+    probability = 0.9747885465621948
 
+
+# 7.Interpret model
+If you try to understand why this image will be classified as a mandrin duck, you can use `interpret_image_classification` utils in towhee, which using [captum](https://captum.ai/) as backend. So you must install it first using `pip install captum` or `conda install captum -c pytorch`.
+
+
+
+```python
+from PIL import Image
+import numpy as np
+from towhee.trainer.utils.visualization import interpret_image_classification
+pil_img = Image.fromarray(np.uint8(img_np * 255))
+val_transform = transforms.Compose([transforms.ToTensor(),
+                                transforms.Normalize(mean=mean, std=std),
+                               ])
+interpret_image_classification(op.model.to('cpu'), pil_img, val_transform, "Occlusion")
+interpret_image_classification(op.model.to('cpu'), pil_img, val_transform, "GradientShap")
+interpret_image_classification(op.model.to('cpu'), pil_img, val_transform, "Saliency")
+```
+
+
+    
+![png](3_train_a_bird_classification_model_files/3_train_a_bird_classification_model_13_0.png)
+    
+
+
+
+    
+![png](3_train_a_bird_classification_model_files/3_train_a_bird_classification_model_13_1.png)
+    
+
+
+
+    
+![png](3_train_a_bird_classification_model_files/3_train_a_bird_classification_model_13_2.png)
+    
+
+
+
+
+
+    (0.9745060205459595, 261)
+
+
+
+
+```python
+
+```
